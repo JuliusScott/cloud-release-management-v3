@@ -1,5 +1,9 @@
 version: 0.2
 
+env:
+  variables:
+    CONTAINER_NAME: cloud-release-app
+
 phases:
   install:
     runtime-versions:
@@ -18,15 +22,15 @@ phases:
   build:
     commands:
       - echo "Building the Docker image"
-      - docker build -t cloud-release-management-v2 .
-      - docker tag cloud-release-management-v2:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cloud-release-management-v2:latest
+      - docker build -t cloud-release-management-v3 .
+      - docker tag cloud-release-management-v3:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cloud-release-management-v3:latest
 
   post_build:
     commands:
       - echo "Pushing the Docker image to Amazon ECR"
-      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cloud-release-management-v2:latest
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cloud-release-management-v3:latest
       - echo "Creating ECS deployment artifact"
-      - printf '[{"name":"Development","imageUri":"%s"}]' "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cloud-release-management-v2:latest" > imagedefinitions.json
+      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cloud-release-management-v3:latest" > imagedefinitions.json
 
 artifacts:
   files: 
