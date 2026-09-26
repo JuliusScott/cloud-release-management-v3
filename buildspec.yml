@@ -1,0 +1,33 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: latest
+    commands:
+      - echo "Installing application dependencies"
+      - npm install
+
+  pre_build:
+    commands:
+      - echo "Getting AWS Account ID"
+      - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - echo "Logging into Amazon ECR"
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+
+  build:
+    commands:
+      - echo "Building the Docker image"
+      - docker build -t cloud-release-management-v2 .
+      - docker tag cloud-release-management-v2:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cloud-release-management-v2:latest
+
+  post_build:
+    commands:
+      - echo "Pushing the Docker image to Amazon ECR"
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cloud-release-management-v2:latest
+      - echo "Creating ECS deployment artifact"
+      - printf '[{"name":"Development","imageUri":"%s"}]' "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cloud-release-management-v2:latest" > imagedefinitions.json
+
+artifacts:
+  files: 
+    - imagedefinitions.json
